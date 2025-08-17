@@ -6,13 +6,12 @@ enabling lifecycle, prompt, and global tool hooks.
 
 from typing import Any, Optional, TypeVar
 
-from pydantic_ai import Agent, Tool
+from pydantic_ai import Agent
 from pydantic_ai._agent_graph import CallToolsNode
 from pydantic_ai import messages as _messages
 from traitlets import HasTraits, Instance
 
 from .base import Hook, HookContainer
-from .tool import ReactiveTool
 
 T = TypeVar('T')  # Return type for hooks
 
@@ -236,15 +235,8 @@ class ReactiveAgent(Agent):
             # Run agent using iter() to get access to all events
             async with self.iter(*args, **kwargs) as agent_run:
                 async for node in agent_run:
-                    # Debug output for all nodes
-                    print(f"Node type: {type(node).__name__}")
-                    
-                    # If it's a tool call node, run our hooks
                     if isinstance(node, CallToolsNode):
-                        print("Found CallToolsNode, response parts:", [type(p).__name__ for p in node.model_response.parts])
-                        # Process each tool call in the response
                         for part in node.model_response.parts:
-                            print("Processing part:", type(part).__name__)
                             if isinstance(part, _messages.ToolCallPart):
                                 tool_def = agent_run.ctx.deps.tool_manager.get_tool_def(part.tool_name)
                                 if tool_def and agent_run.ctx.deps.tool_manager.tools:
@@ -279,38 +271,3 @@ class ReactiveAgent(Agent):
         finally:
             # Always run end hook
             await self.on.run_end(context)
-    
-    async def call_tool(self, tool: Any, *args, **kwargs) -> Any:
-        """Call a tool directly with hook support.
-        
-        This method allows direct tool calls with hooks:
-        - before_any_tool before running
-        - after_any_tool after completion
-        - any_tool_error on failure
-        """
-        # Create context
-        context = {
-            'agent': self,
-            'tool': tool,
-            'name': tool.name,
-            'args': args,
-            'kwargs': kwargs
-        }
-        
-        # Run before hook
-        await self.on.run_before_any_tool(context)
-        
-        try:
-            # Run tool through its __call__ to trigger its hooks
-            result = await tool(*args, **kwargs)
-            
-            # Run after hook
-            context['result'] = result
-            await self.on.run_after_any_tool(context)
-            
-            return result
-        except Exception as e:
-            # Run error hook
-            context['error'] = e
-            await self.on.run_any_tool_error(context)
-            raise

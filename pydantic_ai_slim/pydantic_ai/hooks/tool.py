@@ -7,8 +7,8 @@ from pydantic_ai import Tool
 from pydantic_ai._run_context import RunContext
 from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.toolsets.abstract import AbstractToolset, ToolsetTool
-from .base import Hook, HookContainer
-from .tool_state import ToolStateManager, ToolState
+from .base import Hook
+from .tool_state import ToolStateManager
 
 T = TypeVar('T')  # Return type for hooks
 

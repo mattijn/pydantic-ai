@@ -1,7 +1,7 @@
 """Tool state management for the hook system."""
 
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from traitlets import HasTraits, Enum as TraitEnum, Instance, Dict as TraitDict
 
 class ToolState(str, Enum):
